@@ -1,8 +1,9 @@
-# elastos-light-wallet
+# Overview
+[![BUILD](https://github.com/MButcho/elastos-light-wallet/actions/workflows/build.yml/badge.svg)](https://github.com/MButcho/elastos-light-wallet/actions/workflows/build.yml)
 
-## using the app
+## Using Elastos Light Wallet
 
-### if the ledger device cannot be detected, try adding the udev rules:
+### If the ledger device cannot be detected, try adding the udev rules:
 https://support.ledger.com/hc/en-us/articles/115005165269-Connection-issues-with-Windows-or-Linux
 
 ```

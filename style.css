@@ -426,8 +426,8 @@ button {
   color: #B2B4C3;
   letter-spacing: 0;
   text-align: center;
-  top: 43;
-  position: absolute;
+  top: 565;
+  position: fixed;
   margin: 0;
   left: 0;
   padding-left: 15px;

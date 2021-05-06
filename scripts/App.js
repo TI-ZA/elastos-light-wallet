@@ -523,7 +523,11 @@ const postJson = (url, jsonString, readyCallback, errorCallback) => {
 };
 
 const getRssFeed = async (url, readyCallback, errorCallback) => {
-  const parser = new Parser();
+  const parser = new Parser({
+    requestOptions: {
+    rejectUnauthorized: false
+    }
+  });
   try {
     const feed = await parser.parseURL(url);
     readyCallback(feed);
