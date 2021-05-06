@@ -1017,11 +1017,11 @@ const validateInputs = () => {
   }
   
   if (!isValidDecimal(sendAmount) || (sendAmount == 0)) {
-  if (sendAmount.length == 0) {
-    bannerStatus = `Please enter valid Amount.`;
-  } else {
-    bannerStatus = `[`+sendAmount+`] is NOT valid amount.`;
-  }    
+    if (sendAmount.length == 0) {
+      bannerStatus = `Please enter valid Amount.`;
+    } else {
+      bannerStatus = `[`+sendAmount+`] is NOT valid amount.`;
+    }
     bannerClass = 'bg_red color_white banner-look';
     GuiToggles.showAllBanners(false);
     renderApp();
@@ -1035,10 +1035,14 @@ const validateInputs = () => {
  
   const sendAmountSatsBn = BigNumber(sendAmount, 10).times(Asset.satoshis);
   const feeAmountSatsBn = BigNumber(Number(feeAmountSats) + Number(minerFee), 10);
-  const balanceSatsBn = BigNumber(balance, 10).times(Asset.satoshis);
+  const balanceSatsBn = BigNumber(getELACustomBalance(), 10).times(Asset.satoshis);
   feeAmountEla = BigNumber(Number(feeAmountSats) + Number(minerFee), 10).dividedBy(Asset.satoshis).toString();
   if (sendAmountSatsBn.plus(feeAmountSatsBn).isGreaterThan(balanceSatsBn)) {
-    bannerStatus = `Spending amount [${sendAmount}] + Fees [${feeAmountEla}] is greater than your balance ${balance}.`;
+    if (customUTXOs) {
+      bannerStatus = `Spending amount [${sendAmount}] + Fees [${feeAmountEla}] is greater than ELA balance [${getELACustomBalance()}] in selected UTXOs.`;
+    } else {    
+      bannerStatus = `Spending amount [${sendAmount}] + Fees [${feeAmountEla}] is greater than your ELA balance [${balance}].`;
+    }
     bannerClass = 'bg_red color_white banner-look';
     GuiToggles.showAllBanners(false);
     renderApp();
@@ -2967,6 +2971,21 @@ const validateUTXOsSelection = () => {
     return false;
   }
   
+  /*
+  sendAmount = GuiUtils.getValue('sendAmount').replace(/,/g, '.');
+  if (isValidDecimal(sendAmount)) {
+    feeAmountSats = GuiUtils.getValue('feeAmount');
+    feeRequested = feeAmountSats;
+    const sendAmountSatsBn = BigNumber(sendAmount, 10).times(Asset.satoshis);
+    const feeAmountSatsBn = BigNumber(Number(feeAmountSats) + Number(minerFee), 10);
+    const balanceSatsBn = BigNumber(getELACustomBalance(true), 10).times(Asset.satoshis);
+    feeAmountEla = BigNumber(Number(feeAmountSats) + Number(minerFee), 10).dividedBy(Asset.satoshis).toString();
+    if (sendAmountSatsBn.plus(feeAmountSatsBn).isGreaterThan(balanceSatsBn) && balanceSatsBn > 0) {
+      GuiUtils.setValue('sendAmount', '');
+      sendAmount = '';
+    } 
+  }*/
+    
   /*if (selectedUTXOs.length === 0) {
     bannerStatus = 'You have not selected any UTXOs, please select at least 1.';
     bannerClass = 'bg_red color_white banner-look';
