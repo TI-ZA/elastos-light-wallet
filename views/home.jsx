@@ -306,13 +306,13 @@ module.exports = (props) => {
       </div>
 
       <div className="stakingarea">
-        <Staking App={App} GuiToggles={GuiToggles}/>
+        {/*<Staking App={App} GuiToggles={GuiToggles}/>*/}
       </div>
 
       <div id="scroll-radio"></div>
 
       <div>
-        <News App={App} onLinkClick={onLinkClick}/>
+        {/*<News App={App} onLinkClick={onLinkClick}/>*/}
       </div>
 
     </div>

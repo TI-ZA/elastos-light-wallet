@@ -431,6 +431,7 @@ module.exports = (props) => {
             <select defaultValue={_userNetworkIx} className="settingsOptions m10L" id="userNetworkIx" name="userNetworkIx" onChange={(e)=> changeNetwork(e)}>
               <option value="0">{App.REST_SERVICES[0].name}</option>
               <option value="1">{App.REST_SERVICES[1].name}</option>
+              <option value="2">{App.REST_SERVICES[2].name}</option>
               <option value="99">custom</option>
             </select>
             <input className="settingsInput w209_5px" type="text" size="22" id="userNodeURL" name="userNodeURL" placeholder={App.getRestService()} defaultValue={userDefinedNodeURL ? App.getCurrentNodeURL() : undefined} onChange={(e) => changeUserNodeURL()} />        

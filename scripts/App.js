@@ -86,6 +86,9 @@ const EXPLORER = 'https://blockchain.elastos.org';
 const RSS_FEED_URL = 'https://news.elastos.org/feed/';
 
 const REST_SERVICES = [{
+    name: 'elasafe',
+    url: 'https://api.elasafe.com',
+  },{
     name: 'node1',
     url: 'https://node1.elaphant.app',
   },
@@ -268,7 +271,7 @@ const init = (_GuiToggles) => {
     initFees = 1;
   }
   
-  requestRssFeed();
+  //requestRssFeed();
   if (restService === "") setRestService(defaultNetworkIx);
   if (feeAccount === '') requestFeeAccount();
   requestFee();
@@ -455,7 +458,7 @@ const pollForData = () => {
       break;
     case 4:
       if (address != undefined) {
-        requestListOfProducers(false);
+        //requestListOfProducers(false);
         requestListOfCandidateVotes();
       }
       /* Moved to init
@@ -616,7 +619,7 @@ const requestBlockchainData = (_userRequest) => {
   
   /* Clear producers and reset timer poll if user request */
   if (_userRequest) {
-    reloadProducersAndVotes(_userRequest);
+    //reloadProducersAndVotes(_userRequest);
     pollDataTypeIx = MAX_POLL_DATA_TYPE_IX;
     setPollForAllInfoTimer();
   }
