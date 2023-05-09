@@ -86,15 +86,14 @@ const EXPLORER = 'https://blockchain.elastos.org';
 const RSS_FEED_URL = 'https://news.elastos.org/feed/';
 
 const REST_SERVICES = [{
+    name: 'elastos.io',
+    url: 'https://api.elastos.io',
+  },{
+    name: 'trinity',
+    url: 'https://api.trinity-tech.io',
+  },{
     name: 'elasafe',
     url: 'https://api.elasafe.com',
-  },{
-    name: 'node1',
-    url: 'https://node1.elaphant.app',
-  },
-  {
-    name: 'node3',
-    url: 'https://node3.elaphant.app',
   },
 ];
 
@@ -194,13 +193,13 @@ const parsedRssFeed = [];
 let feeStatus = 'No Fee Requested Yet';
 
 let feeRequested = '';
-let initFees = '';
+let initFees = 9600;
 
 let minerFee = 100;
 
 let feeAccountStatus = 'No Fee Account Requested Yet';
 
-let feeAccount = '';
+let feeAccount = 'EJfW2mCdZPVxHVEv891xDop7hJAsYbKH5R';
 
 let bannerStatus = '';
 
@@ -273,8 +272,8 @@ const init = (_GuiToggles) => {
   
   //requestRssFeed();
   if (restService === "") setRestService(defaultNetworkIx);
-  if (feeAccount === '') requestFeeAccount();
-  requestFee();
+  //if (feeAccount === '') requestFeeAccount();
+  //requestFee();
   
   // context menu
   if (currentContextMenu) {
@@ -332,7 +331,7 @@ const setRestService = (ix) => {
 };
 
 const getTransactionHistoryUrl = (address) => {
-  const url = `${restService}/api/v3/history/${address}`;
+  const url = `${restService}/ela`;
   return url;
 };
 
@@ -342,18 +341,17 @@ const getTransactionHistoryLink = (txid) => {
 };
 
 const getBalanceUrl = (address) => {
-  const url = `${getRestService()}/api/v1/asset/balances/${address}`;
-  // mainConsole.log('getBalanceUrl', url);
+  const url = `${getRestService()}/ela`;
   return url;
 };
 
 const getUnspentTransactionOutputsUrl = (address) => {
-  const url = `${getRestService()}/api/v1/asset/utxo/${address}/${Asset.elaAssetId}`;
+  const url = `${getRestService()}/ela`;
   return url;
 };
 
 const getStateUrl = () => {
-  const url = `${getRestService()}/api/v1/node/state`;
+  const url = `${getRestService()}/ela`;
   return url;
 };
 
@@ -447,11 +445,11 @@ const pollForData = () => {
       }
       break;
     case 3:
-      if (address != undefined) {
-        requestTransactionHistory();
-        requestBalance();
-        requestUnspentTransactionOutputs();
+      if (address !== undefined) {
         requestBlockchainState();
+        requestBalance();
+        requestTransactionHistory();
+        requestUnspentTransactionOutputs();        
       }
       pollDataTypeIx++;
       setPollForAllInfoTimer();
@@ -459,7 +457,7 @@ const pollForData = () => {
     case 4:
       if (address != undefined) {
         //requestListOfProducers(false);
-        requestListOfCandidateVotes();
+        //requestListOfCandidateVotes();
       }
       /* Moved to init
       requestRssFeed();
@@ -564,12 +562,35 @@ const getJson = (url, readyCallback, errorCallback) => {
   xhttp.send();  
 };
 
+const getJsonPost = (url, data, readyCallback, errorCallback) => {
+  const xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function () {
+    if (this.readyState == 4) {
+      if (this.status == 200) {
+        readyCallback(JSON.parse(this.response));
+      } else {
+        errorCallback(this.response);
+      }
+    }
+  };
+  if (JSON_TIMEOUT != undefined) {
+    xhttp.timeout = JSON_TIMEOUT;
+  }
+  xhttp.responseType = 'text';
+  xhttp.open('POST', url, true);
+  xhttp.setRequestHeader("Content-Type", "application/json");
+  requests.push(xhttp);
+  xhttp.send(data);
+  //mainConsole.log("curl --location '" + url + "' --header 'Content-Type: application/json' --data '" + " " + data + "'");
+};
+
 const requestUnspentTransactionOutputs = () => {
   unspentTransactionOutputsStatus = 'UTXOs Requested';
   if (address) {
     const unspentTransactionOutputsUrl = getUnspentTransactionOutputsUrl(address);
     // mainConsole.log( 'unspentTransactionOutputsUrl ' + unspentTransactionOutputsUrl );
-    getJson(unspentTransactionOutputsUrl, getUnspentTransactionOutputsReadyCallback, getUnspentTransactionOutputsErrorCallback);
+    const data = '{"method": "listunspent", "params": {"addresses": ["' + address + '"]}}';
+    getJsonPost(unspentTransactionOutputsUrl, data, getUnspentTransactionOutputsReadyCallback, getUnspentTransactionOutputsErrorCallback);
   }
 };
 
@@ -583,10 +604,10 @@ const getUnspentTransactionOutputsReadyCallback = (response) => {
   unspentTransactionOutputsStatus = 'UTXOs Received';
   parsedUnspentTransactionOutputs.length = 0;
 
-  // mainConsole.log('getUnspentTransactionOutputsCallback ' + JSON.stringify(response), response.Result);
+  //mainConsole.log('getUnspentTransactionOutputsCallback ' + JSON.stringify(response), response.result);
 
-  if ((response.Result != undefined) && (response.Result != null) && (response.Error == 0)) {
-    response.Result.forEach((utxo, utxoIx) => {
+  if ((response.result != undefined) && (response.result != null) && (response.error === null)) {
+    response.result.forEach((utxo, utxoIx) => {
       TxFactory.updateValueSats(utxo, utxoIx);
       parsedUnspentTransactionOutputs.push(utxo);
     });
@@ -610,10 +631,10 @@ const requestBlockchainData = (_userRequest) => {
   }
   address = AddressTranscoder.getAddressFromPublicKey(publicKey);
 
-  requestTransactionHistory();
+  requestBlockchainState();
   requestBalance();
   requestUnspentTransactionOutputs();
-  requestBlockchainState();
+  requestTransactionHistory();  
   
   CoinGecko.requestPriceData();
   
@@ -913,21 +934,14 @@ const sendAmountToAddressErrorCallback = (error) => {
 };
 
 const sendAmountToAddressReadyCallback = (transactionJson) => {
-  mainConsole.log('sendAmountToAddressReadyCallback ' + JSON.stringify(transactionJson));
-  if (transactionJson.status == 400) {
+  //mainConsole.log('sendAmountToAddressReadyCallback ' + JSON.stringify(transactionJson));
+  if (transactionJson.error != null) {
     sendToAddressStatuses.length = 0;
-    const message = `Transaction Error.  Status: ${transactionJson.status}  Result:${transactionJson.result}`;
+    const message = `Transaction Error.  Error: ${transactionJson.error.code}  Result:${transactionJson.error.message}`;
     bannerStatus = message;
     bannerClass = 'bg_red color_white banner-look';
     sendToAddressStatuses.push(message);
-  GuiToggles.showAllBanners(false);
-  } else if (transactionJson.Error != 0) {
-    sendToAddressStatuses.length = 0;
-    const message = `Transaction Error.  Error: ${transactionJson.Error}  Result:${transactionJson.Result}`;
-    bannerStatus = message;
-    bannerClass = 'bg_red color_white banner-look';
-    sendToAddressStatuses.push(message);
-  GuiToggles.showAllBanners(false);
+    GuiToggles.showAllBanners(false);
   } else {
     sendToAddressStatuses.length = 0;
     const link = getTransactionHistoryLink(transactionJson.result);
@@ -1294,10 +1308,10 @@ const sendAmountToAddress = () => {
 
 // https://walletservice.readthedocs.io/en/latest/api_guide.html#post--api-1-sendRawTx
 const sendAmountToAddressCallback = (encodedTx) => {
-  const txUrl = `${getRestService()}/api/v1/transaction`;
-  const jsonString = `{"method": "sendrawtransaction", "data": "${encodedTx}"}`;
+  const txUrl = `${getRestService()}/ela`;
+  //const jsonString = `{"method": "sendrawtransaction", "data": "${encodedTx}"}`;
+  const jsonString = `{"method": "sendrawtransaction", "params": {"data": "${encodedTx}"}}`;
 
-  // mainConsole.log('sendAmountToAddress.txUrl ' + txUrl);
   // mainConsole.log('sendAmountToAddress.encodedTx ' + JSON.stringify(encodedTx));
 
   const decodedTx = TxTranscoder.decodeTx(Buffer.from(encodedTx, 'hex'), true);
@@ -1310,7 +1324,7 @@ const sendAmountToAddressCallback = (encodedTx) => {
   sendToAddressStatuses.push(JSON.stringify(decodedTx));
   sendToAddressStatuses.push(`Transaction Requested: curl ${txUrl} -H "Content-Type: application/json" -d '${jsonString}'`);
   renderApp();
-  postJson(txUrl, jsonString, sendAmountToAddressReadyCallback, sendAmountToAddressErrorCallback);
+  getJsonPost(txUrl, jsonString, sendAmountToAddressReadyCallback, sendAmountToAddressErrorCallback);
 };
 
 const requestListOfProducersErrorCallback = (response) => {
@@ -1376,7 +1390,7 @@ const requestListOfProducersReadyCallback = (response, _userRequest) => {
 };
 
 const requestListOfProducers = (_userRequest) => {
-  if (_userRequest) {
+  /*if (_userRequest) {
     producerListStatus = 'Refreshing Producers, please wait ...';
   } else {
     producerListStatus = 'Loading Producers, please wait ...';
@@ -1391,11 +1405,11 @@ const requestListOfProducers = (_userRequest) => {
 
     renderApp();
     getJson(txUrl, requestListOfProducersReadyCallbackWrap, requestListOfProducersErrorCallback);
-  }
+  }*/
 };
 
 const toggleProducerSelection = (item) => {
-  // mainConsole.log('INTERIM toggleProducerSelection item', item);
+  /*// mainConsole.log('INTERIM toggleProducerSelection item', item);
   const index = item.index;
   // mainConsole.log('INTERIM toggleProducerSelection index', index);
   // mainConsole.log('INTERIM toggleProducerSelection length', parsedProducerList.producers.length);
@@ -1412,7 +1426,7 @@ const toggleProducerSelection = (item) => {
     }
   });
 
-  renderApp();
+  renderApp();*/
 };
 
 const selectActiveVotes = () => {
@@ -1529,7 +1543,7 @@ const requestListOfCandidateVotesReadyCallback = (response) => {
 };
 
 const requestListOfCandidateVotes = () => {
-  if (address !== undefined) {
+  /*if (address !== undefined) {
     candidateVoteListStatus = 'Loading Votes, please wait ...';
 
     const txUrl = `${getRestService()}/api/v1/dpos/address/${address}?pageSize=1&pageNum=1`;
@@ -1537,7 +1551,7 @@ const requestListOfCandidateVotes = () => {
 
     renderApp();
     getJson(txUrl, requestListOfCandidateVotesReadyCallback, requestListOfCandidateVotesErrorCallback);
-  }
+  }*/
 };
 
 const sendVoteTx = () => {
@@ -1676,7 +1690,7 @@ const sendVoteTx = () => {
 // message: lastResponse,
 // signature: signature
 
-const sendVoteCallback = (encodedTx) => {
+/*const sendVoteCallback = (encodedTx) => {
   const txUrl = `${getRestService()}/api/v1/transaction`;
   const jsonString = `{"method": "sendrawtransaction", "data": "${encodedTx}"}`;
 
@@ -1719,10 +1733,10 @@ const sendVoteReadyCallback = (transactionJson) => {
     clearUTXOsSelection();
   }  
   renderApp();
-};
+};*/
 
 const getTransactionHistoryErrorCallback = (response) => {
-  //transactionHistoryStatus = `History Error: ${JSON.stringify(response)}`;
+  //console.log(`History Error: ${JSON.stringify(response)}`);
   transactionHistoryStatus = `Error loading History`;
   renderApp();
 };
@@ -1738,55 +1752,55 @@ const getTransactionHistoryReadyCallback = (transactionHistory) => {
   transactionHistoryStatus = 'History Received';
   parsedTransactionHistory.length = 0;
   if (transactionHistory.result !== undefined) {
-    if (transactionHistory.result.History !== undefined) {
-      transactionHistory.result.History.forEach((tx, txIx) => {
-        let date = formatDate(new Date(tx.CreateTime * 1000),"date");
-        let time = formatDate(new Date(tx.CreateTime * 1000),"time");
-        if (tx.CreateTime == 0) {
+    if (transactionHistory.result.txhistory !== undefined) {
+      transactionHistory.result.txhistory.forEach((tx, txIx) => {
+        let date = formatDate(new Date(tx.time * 1000),"date");
+        let time = formatDate(new Date(tx.time * 1000),"time");
+        if (tx.time == 0) {
           date = formatDate(new Date(),"date");
           time = '';
         }
         const parsedTransaction = {};
-        parsedTransaction.sortTime = tx.CreateTime;
-        if (tx.Status == 'pending' && tx.CreateTime == 0) {
+        parsedTransaction.sortTime = tx.time;
+        if (tx.Status == 'pending' && tx.time == 0) {
           parsedTransaction.sortTime = Math.floor(new Date() / 1000);
         }
         //mainConsole.log(tx);
         parsedTransaction.n = txIx;
-        parsedTransaction.type = tx.Type;
-        if (tx.Type == 'income') {
+        parsedTransaction.type = tx.type;
+        if (tx.type == 'received') {
           parsedTransaction.type = 'Received';
-          parsedTransaction.from = tx.Inputs[0];
+          parsedTransaction.from = tx.inputs[0];
           parsedTransaction.to = '';
         }
-        if (tx.Type == 'spend') {
+        if (tx.type == 'sent') {
           parsedTransaction.type = 'Sent';
           parsedTransaction.from = '';
-          parsedTransaction.to = tx.Outputs[0];
+          parsedTransaction.to = tx.outputs[0];
         }
-        if (tx.Type == 'spend' && tx.Status == 'pending') {
+        if (tx.type == 'sent' && tx.Status == 'pending') {
           parsedTransaction.type = 'Sending';
         }
-        if (tx.Type == 'income' && tx.Status == 'pending') {
+        if (tx.Type == 'received' && tx.Status == 'pending') {
           parsedTransaction.type = 'Receiving';
         }
         parsedTransaction.status = tx.Status;
-        parsedTransaction.valueSat = tx.Value;
+        parsedTransaction.valueSat = tx.value*100000000;
         
         parsedTransaction.value = BigNumber(parsedTransaction.valueSat, 10).dividedBy(Asset.satoshis).toFixed(roundDecimalELA);
         parsedTransaction.valueShort = BigNumber(parsedTransaction.valueSat, 10).dividedBy(Asset.satoshis).toFixed(4);
         //mainConsole.log(parsedTransaction.valueShort);
         //parsedTransaction.value = formatTxValue(tx.Value);
-        parsedTransaction.address = tx.Address;
-        parsedTransaction.txHash = tx.Txid;
-        parsedTransaction.txHashWithEllipsis = tx.Txid;
+        parsedTransaction.address = tx.address;
+        parsedTransaction.txHash = tx.txid;
+        parsedTransaction.txHashWithEllipsis = tx.txid;
         if (parsedTransaction.txHashWithEllipsis.length > 7) {
           parsedTransaction.txHashWithEllipsis = parsedTransaction.txHashWithEllipsis.substring(0, 7) + '...';
         }
-        parsedTransaction.txDetailsUrl = getTransactionHistoryLink(tx.Txid);
+        parsedTransaction.txDetailsUrl = getTransactionHistoryLink(tx.txid);
         parsedTransaction.date = date;
         parsedTransaction.time = time;
-        let memo = tx.Memo;
+        let memo = tx.memo;
         if (memo.indexOf("type:text,msg:") >= 0) memo = memo.substring(14, memo.length).trim();
         parsedTransaction.memoLong = memo;
         if (memo.length > 14) {
@@ -1796,21 +1810,46 @@ const getTransactionHistoryReadyCallback = (transactionHistory) => {
         } else {
           parsedTransaction.memo = memo;
         }
-        if (tx.CreateTime != 0) {
-          let confirmedHeight = tx.Height;
+        if (tx.time !== 0) {
+          let confirmedHeight = tx.height;
           let confirmations = blockchainLastReceivedHeight - confirmedHeight;
-          parsedTransaction.height = tx.Height;
+          //console.log(blockchainLastReceivedHeight, confirmedHeight);
+          parsedTransaction.height = confirmedHeight;
           parsedTransaction.confirmations = confirmations;
         } else {
           parsedTransaction.confirmations = "Not Confirmed";
           parsedTransaction.height = "";
         }
-        if (tx.TxType === "transferAsset") {
-          parsedTransaction.txtype = "Asset Transfer";
-        } else if (tx.TxType === "vote") {
-          parsedTransaction.txtype = "Vote";
-        } else {
-          parsedTransaction.txtype = "Unknown";
+        //mainConsole.log(tx.txid, tx.inputs[0], tx.outputs[0], tx.txtype, tx.value, tx.Status, tx.votecategory);
+        
+        switch (tx.txtype) {
+          case 1:
+            parsedTransaction.txtype = "Vote";
+            break;
+          case 2:
+            parsedTransaction.txtype = "Transfer";
+            break;
+          case 7:
+            if (tx.inputs[0] === "XVbCTM7vqM1qHKsABSFH4xKN1qbp7ijpWf" || tx.outputs[0] =="XVbCTM7vqM1qHKsABSFH4xKN1qbp7ijpWf" ) parsedTransaction.txtype = "From ESC Sidechain";
+            if (tx.inputs[0] === "XUgTgCnUEqMUKLFAg3KhGv1nnt9nn8i3wi" || tx.outputs[0] =="XUgTgCnUEqMUKLFAg3KhGv1nnt9nn8i3wi" ) parsedTransaction.txtype = "From EID Sidechain";
+            break;
+          case 8:
+            if (tx.inputs[0] === "XVbCTM7vqM1qHKsABSFH4xKN1qbp7ijpWf" || tx.outputs[0] =="XVbCTM7vqM1qHKsABSFH4xKN1qbp7ijpWf" ) parsedTransaction.txtype = "To ESC Sidechain";
+            if (tx.inputs[0] === "XUgTgCnUEqMUKLFAg3KhGv1nnt9nn8i3wi" || tx.outputs[0] =="XUgTgCnUEqMUKLFAg3KhGv1nnt9nn8i3wi" ) parsedTransaction.txtype = "To EID Sidechain";
+            break;
+          case 41:
+            parsedTransaction.txtype = "Proposal Fund Withdrawal";
+            break;
+          case 98:
+            parsedTransaction.txtype = "Staking";
+            break;
+          case 99:
+            if (tx.votecategory == 2) parsedTransaction.txtype = "CRC Voting";
+            if (tx.votecategory == 16) parsedTransaction.txtype = "BPoS Voting";
+            break;
+          default:
+            parsedTransaction.txtype = tx.txtype + "[" + tx.votecategory + "]";
+            break;          
         }
         
         parsedTransactionHistory.push(parsedTransaction);
@@ -1831,7 +1870,8 @@ const requestTransactionHistory = () => {
   if (address) {
     const transactionHistoryUrl = getTransactionHistoryUrl(address);
     // mainConsole.log('requestTransactionHistory ' + transactionHistoryUrl);
-    getJson(transactionHistoryUrl, getTransactionHistoryReadyCallback, getTransactionHistoryErrorCallback);
+    const data = '{"method": "gethistory","params":{"address": "' + address + '", "limit":50,"order":"desc","skip":0, "timestamp":0}}';
+    getJsonPost(transactionHistoryUrl, data, getTransactionHistoryReadyCallback, getTransactionHistoryErrorCallback);
   }
 };
 
@@ -1842,9 +1882,9 @@ const getBalanceErrorCallback = (response) => {
 
 const getBalanceReadyCallback = (balanceResponse) => {
   let lastBalance = balance;
-  if (balanceResponse.Error == 0) {
+  if (balanceResponse.error == null) {
     balanceStatus = `Balance Received.`;
-    balance = balanceResponse.Result;
+    balance = balanceResponse.result;
     if (lastBalance !== balance) {
       balanceChange = true;
       if (customUTXOs) {
@@ -1858,7 +1898,7 @@ const getBalanceReadyCallback = (balanceResponse) => {
     balanceStatus = `Error receiving balance`;
     balance = undefined;
   }
-  // mainConsole.log('getBalanceReadyCallback ' + JSON.stringify(balanceResponse));
+  //mainConsole.log('getBalanceReadyCallback ' + JSON.stringify(balanceResponse));
 
   renderApp();
 };
@@ -1867,7 +1907,8 @@ const requestBalance = () => {
   if (address != undefined) {
     const balanceUrl = getBalanceUrl(address);
     balanceStatus = `Balance Requested ${balanceUrl}`;
-    getJson(balanceUrl, getBalanceReadyCallback, getBalanceErrorCallback);
+    const data = '{"method": "getreceivedbyaddress", "params": { "address": "' + address + '"}}'
+    getJsonPost(balanceUrl, data, getBalanceReadyCallback, getBalanceErrorCallback);
   }
 };
 
@@ -1878,13 +1919,13 @@ const getBlockchainStateErrorCallback = (blockchainStateResponse) => {
 
 const getBlockchainStateReadyCallback = (blockchainStateResponse) => {
   // mainConsole.log('getBlockchainStateReadyCallback ', blockchainStateResponse);
-  if (blockchainStateResponse.Error == 0) {
+  if (blockchainStateResponse.error === null) {
     blockchainStatus = `Blockchain State Received`;
-    blockchainState = blockchainStateResponse.Result;
+    blockchainState = blockchainStateResponse.result;
     blockchainLastReceivedHeight = blockchainState.height;
   } else {
-    balanceStatus = 'Blockchain State Error ' + blockchainStateResponse.Error;
-    blockchainState = blockchainStateResponse.Result;
+    balanceStatus = 'Blockchain State Error ' + blockchainStateResponse.error;
+    blockchainState = blockchainStateResponse.result;
   }
 
   renderApp();
@@ -1894,7 +1935,8 @@ const requestBlockchainState = () => {
   const stateUrl = getStateUrl();
   blockchainState = {};
   blockchainStatus = `Blockchain State Requested`;
-  getJson(stateUrl, getBlockchainStateReadyCallback, getBlockchainStateErrorCallback);
+  const data = '{"method": "getnodestate"}'
+  getJsonPost(stateUrl, data, getBlockchainStateReadyCallback, getBlockchainStateErrorCallback);
 };
 
 const getConfirmations = () => {
@@ -2111,7 +2153,7 @@ const getELABalance = () => {
 
 const getELACustomBalance = () => {
   if (customUTXOs) {
-    let customBalance = selectedUTXOs.reduce((total, currentValue) => total = total + Number(currentValue.Value),0);
+    let customBalance = selectedUTXOs.reduce((total, currentValue) => total = total + Number(currentValue.amount),0);
     return customBalance;
   } else {
     if (balance) {
@@ -2308,54 +2350,6 @@ const getRssFeedReadyCallback = (response) => {
   renderApp();
 };
 
-const requestFee = async () => {
-  const feeUrl = `${getRestService()}/api/v1/fee`;
-  feeStatus = 'Fee Requested';
-  if (initFees === '') {
-    getJson(feeUrl, getFeeReadyCallback, getFeeErrorCallback);
-  }
-};
-
-const getFeeErrorCallback = (error) => {
-  // mainConsole.log('getFeeErrorCallback ', error);
-  feeStatus = `Rss Feed Error ${error.message}`;
-  initFees = '';
-  feeRequested = initFees;
-  renderApp();
-};
-
-const getFeeReadyCallback = (response) => {
-  feeStatus = 'Fee Received';
-  if (initFees === '') { 
-    initFees = response.result.toString();
-    feeRequested = initFees;
-  }
-  // mainConsole.log('getFeeReadyCallback ', response, fee);
-  renderApp();
-};
-
-
-const requestFeeAccount = async () => {
-  const feeAccountUrl = `${getRestService()}/api/v1/node/reward/address`;
-  feeAccountStatus = 'Fee Account Requested';
-  // mainConsole.log('requestFeeAccount ', feeAccountStatus);
-  getJson(feeAccountUrl, getFeeAccountReadyCallback, getFeeAccountErrorCallback);
-};
-
-const getFeeAccountErrorCallback = (error) => {
-  // mainConsole.log('getFeeErrorCallback ', error);
-  feeAccountStatus = `Rss Account Feed Error ${error.message}`;
-  feeAccount = '';
-  renderApp();
-};
-
-const getFeeAccountReadyCallback = (response) => {
-  feeAccountStatus = 'Fee Account Received';
-  feeAccount = response.result;
-  // mainConsole.log('getFeeAccountReadyCallback ', response, feeAccount);
-  renderApp();
-};
-
 const getParsedRssFeed = () => {
   return parsedRssFeed;
 };
@@ -2407,8 +2401,8 @@ const insertELA = (type) => {
   
   if (newAmount < 0) newAmount = 0;
   //mainConsole.log("getELACustomBalance()", getELACustomBalance(), "newAmount", newAmount, "subtractFee", subtractFee);
-    
-  if (Number(getELACustomBalance()).toFixed(roundDecimalELA) < (Number(newAmount) + Number(subtractFee)).toFixed(roundDecimalELA)) {
+  
+  if (Number(getELACustomBalance()).toFixed(roundDecimalELA) < Number((newAmount) + Number(subtractFee).toFixed(roundDecimalELA))) {
     newAmount = 0;
     bannerStatus = 'You have insufficient ELA balance to spend.';
     bannerClass = 'landing-btnbg color_white banner-look';
@@ -3091,12 +3085,12 @@ exports.generatePrivateKeyHex = generatePrivateKeyHex;
 exports.getGeneratedPrivateKeyHex = getGeneratedPrivateKeyHex;
 exports.copyPrivateKeyToClipboard = copyPrivateKeyToClipboard;
 exports.copyAddressToClipboard = copyAddressToClipboard;
-/* Producers & Candidates */
+/* Producers & Candidates
 exports.reloadProducersAndVotes = reloadProducersAndVotes;
 exports.requestListOfProducers = requestListOfProducers;
 exports.requestListOfCandidateVotes = requestListOfCandidateVotes;
 exports.verifyLedgerBanner = verifyLedgerBanner;
-exports.getLoadedProducerList = getLoadedProducerList;
+exports.getLoadedProducerList = getLoadedProducerList;*/
 //exports.formatTxValue = formatTxValue;
 exports.selectActiveVotes = selectActiveVotes;
 exports.clearSelection = clearSelection;

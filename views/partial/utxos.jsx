@@ -68,8 +68,8 @@ module.exports = (props) => {
                 App.getAllUTXOs().slice(0, App.getAllUTXOs().count).sort(sort === "index" ? (({utxoIx: previousutxoIx}, {utxoIx: currentutxoIx}) => direction === "asc" ? previousutxoIx - currentutxoIx : currentutxoIx - previousutxoIx) : (({Value: previousValue}, {Value: currentValue}) => direction === "asc" ? previousValue - currentValue : currentValue - previousValue)).map((item, index) => {
                   return (<tr className={App.checkUTXO(item.utxoIx) ? 'txtable-row voting-selected ': 'txtable-row voting-hover'} key={index} onClick={(e) => App.toggleUTXOControl(item.utxoIx)}>
                     <td>{item.utxoIx}</td>
-                    <td>{item.Txid.substring(0, 15) + '...'}</td>
-                    <td>{item.Value}</td>
+                    <td>{item.txid.substring(0, 15) + '...'}</td>
+                    <td>{item.amount}</td>
                     <td>
                       <UTXOControlButtonText item={item}/>
                     </td>                  

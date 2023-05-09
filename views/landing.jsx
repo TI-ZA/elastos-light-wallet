@@ -37,7 +37,7 @@ const UseLedgerButton = (props) => {
     if (!App.getLedgerDeviceInfo().error) {
       //editablePath = false; // keep Ledger path on login
       GuiToggles.showHome();
-      App.reloadProducersAndVotes(false);
+      //App.reloadProducersAndVotes(false);
     }
   }
   if (App.getLedgerDeviceInfo() ? App.getLedgerDeviceInfo().enabled : false) {
@@ -103,7 +103,7 @@ module.exports = (props) => {
       closeModal();
       //editablePath = false; // keep Ledger path on login
       GuiToggles.showHome();
-      App.reloadProducersAndVotes(false);
+      //App.reloadProducersAndVotes(false);
     }
   }
   

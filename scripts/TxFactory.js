@@ -133,8 +133,8 @@ const createUnsignedSendToTxSats = (unspentTransactionOutputs, sendToAddress, se
     if (inputValueSats.isLessThan(sendAmountAndFeeAmountSats)) {
       if (utxo.valueSats.isGreaterThan(ZERO)) {
         const utxoInput = {};
-        utxoInput.TxId = utxo.Txid.toUpperCase();
-        utxoInput.ReferTxOutputIndex = utxo.Index;
+        utxoInput.TxId = utxo.txid.toUpperCase();
+        utxoInput.ReferTxOutputIndex = utxo.vout;
 
         // console.log(`createUnsignedSendToTx.utxoInput[${tx.UTXOInputs.length}] ${JSON.stringify(utxo)}`);
 
@@ -225,7 +225,7 @@ const getMaxAmountToSpendSats = (unspentTransactionOutputs, utxoMaxCount) => {
 
 const updateValueSats = (utxo, utxoIx) => {
   /* eslint-disable */
-  const valueBigNumber = BigNumber(utxo.Value, 10);
+  const valueBigNumber = BigNumber(utxo.amount, 10);
   /* eslint-enable */
   utxo.utxoIx = utxoIx;
   utxo.valueSats = valueBigNumber.times(Asset.satoshis);
